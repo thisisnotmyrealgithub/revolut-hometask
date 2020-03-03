@@ -16,18 +16,23 @@ Tech stack:
 ### Functions 
 
 - Create account with amount: 
+
 curl -X POST http://localhost:8080/api/account -H 'content-type: application/json;charset=UTF-8' --data-binary '{"amount": 100}' --compressed
 
 - Account balance:
+
 curl 'http://localhost:8080/api/account/balance?id=1'
 
 - Add money to account:
+
 curl -X POST 'http://localhost:8080/api/account/add?id=1' -H 'content-type: application/json;charset=UTF-8' --data-binary '{"amount": 100}' --compressed
 
 - Charge money from account:
+
 curl -X POST 'http://localhost:8080/api/account/charge?id=1' -H 'content-type: application/json;charset=UTF-8' --data-binary '{"amount": 100}' --compressed
 
 - Transfer money: 
+
 curl -X POST 'http://localhost:8080/api/account/transfer?from=1&to=2' -H 'content-type: application/json;charset=UTF-8' --data-binary '{"amount": 100}' --compressed
 
 ###what can be improved?
