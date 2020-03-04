@@ -9,13 +9,13 @@ import java.math.BigDecimal;
 public class InsufficientFundsException extends Throwable implements
     ExceptionMapper<InsufficientFundsException> {
 
-  private Integer account;
+  private Long account;
   private BigDecimal sum;
 
   public InsufficientFundsException() {
   }
 
-  public InsufficientFundsException(Integer account, BigDecimal sum) {
+  public InsufficientFundsException(Long account, BigDecimal sum) {
     this.account = account;
     this.sum = sum;
   }

@@ -1,6 +1,7 @@
 package com.revolut.hometask.service;
 
 import com.revolut.hometask.exception.InsufficientFundsException;
+import com.revolut.hometask.exception.WrongAmountException;
 import com.revolut.hometask.model.Account;
 import com.revolut.hometask.model.Amount;
 import org.junit.jupiter.api.Assertions;
@@ -29,7 +30,7 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void createAccountSimpleTest() {
+  public void createAccountSimpleTest() throws WrongAmountException {
     var account = service.createAccount();
 
     assertEquals(account.getId(), 0);
@@ -43,7 +44,7 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void getAccountBalance() {
+  public void getAccountBalance() throws WrongAmountException {
     var newBalance = new Amount(new BigDecimal(10.0));
     var account = service.createAccount(newBalance);
     var resultBalance = service.getAccountBalance(account.getId());
@@ -53,12 +54,12 @@ public class AccountServiceTest {
   @Test
   public void getWrongAccountBalance() {
     Assertions.assertThrows(NotFoundException.class, () -> {
-      service.getAccountBalance(1);
+      service.getAccountBalance(1L);
     });
   }
 
   @Test
-  public void getBalanceImmutableTest() {
+  public void getBalanceImmutableTest() throws WrongAmountException {
     var account = service.createAccount();
 
     var balance = service.getAccountBalance(account.getId());
@@ -71,7 +72,7 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void createAccountImmutableTest() {
+  public void createAccountImmutableTest() throws WrongAmountException {
     var account = service.createAccount();
     checkBalanceImmutable(account);
 
@@ -89,14 +90,17 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void addBalanceTesting() throws InterruptedException {
+  public void addBalanceTesting() throws InterruptedException, WrongAmountException {
     var account = service.createAccount();
     var balance = new Amount(BigDecimal.valueOf(10.0));
     ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
     List<Callable<Void>> tasks = new ArrayList<>();
     tasks.add(() -> {
       for (int i = 0; i < steps; i++) {
-        service.addMoneyToAccount(account.getId(), balance);
+        try {
+          service.addMoneyToAccount(account.getId(), balance);
+        } catch (WrongAmountException ignore) {
+        }
       }
       return null;
     });
@@ -104,8 +108,7 @@ public class AccountServiceTest {
       for (int i = 0; i < steps; i++) {
         try {
           service.chargeMoneyFromAccount(account.getId(), balance, true);
-        } catch (InsufficientFundsException ignore) {
-        }
+        } catch (InsufficientFundsException | WrongAmountException ignore) { }
       }
       return null;
     });
@@ -117,7 +120,7 @@ public class AccountServiceTest {
 
 
   @Test
-  public void chargeMoneyFailTest() {
+  public void chargeMoneyFailTest() throws WrongAmountException {
     var accountAlice = service.createAccount(new Amount(BigDecimal.valueOf(10)));
 
     Assertions.assertThrows(InsufficientFundsException.class, () -> {
@@ -126,7 +129,7 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void transferMoneyFailTest() {
+  public void transferMoneyFailTest() throws WrongAmountException {
     var accountAlice = service.createAccount(new Amount(BigDecimal.valueOf(10)));
     var accountBob = service.createAccount(new Amount(BigDecimal.valueOf(100)));
 
@@ -136,7 +139,7 @@ public class AccountServiceTest {
   }
 
   @Test
-  public void transferMoneyTest() throws InterruptedException {
+  public void transferMoneyTest() throws InterruptedException, WrongAmountException {
     double initSum = 1000.0;
     var accountAlice = service.createAccount(new Amount(BigDecimal.valueOf(initSum)));
     var accountBob = service.createAccount(new Amount(BigDecimal.valueOf(initSum)));
@@ -149,7 +152,7 @@ public class AccountServiceTest {
       for (int i = 0; i < steps; i++) {
         try {
           service.transferMoney(accountAlice.getId(), accountBob.getId(), transferSum);
-        } catch (InsufficientFundsException ignore) {
+        } catch (InsufficientFundsException | WrongAmountException ignore) {
         }
       }
       return null;
@@ -158,7 +161,7 @@ public class AccountServiceTest {
       for (int i = 0; i < steps; i++) {
         try {
           service.transferMoney(accountBob.getId(), accountAlice.getId(), transferSum);
-        } catch (InsufficientFundsException ignore) {
+        } catch (InsufficientFundsException | WrongAmountException ignore) {
         }
       }
       return null;
@@ -170,4 +173,50 @@ public class AccountServiceTest {
     assertEquals(aliceBalance.getAmount().add(bobBalance.getAmount()), BigDecimal.valueOf(initSum + initSum));
   }
 
+
+  @Test
+  public void addWrongAccountSum() throws WrongAmountException {
+    var account = service.createAccount(new Amount(BigDecimal.valueOf(10)));
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.addMoneyToAccount(account.getId(), new Amount(BigDecimal.valueOf(-10)));
+    });
+
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.addMoneyToAccount(account.getId(), new Amount(BigDecimal.ZERO));
+    });
+
+    assertEquals(service.getAccountBalance(account.getId()).getAmount(), BigDecimal.valueOf(10));
+  }
+
+  @Test
+  public void chargeWrongAccountSum() throws WrongAmountException {
+    var account = service.createAccount(new Amount(BigDecimal.valueOf(10)));
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.chargeMoneyFromAccount(account.getId(), new Amount(BigDecimal.valueOf(-10)));
+    });
+
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.chargeMoneyFromAccount(account.getId(), new Amount(BigDecimal.ZERO));
+    });
+
+    assertEquals(service.getAccountBalance(account.getId()).getAmount(), BigDecimal.valueOf(10));
+  }
+
+  @Test
+  public void transferWrongAccountSum() throws WrongAmountException {
+    double initSum = 1000.0;
+    var accountAlice = service.createAccount(new Amount(BigDecimal.valueOf(initSum)));
+    var accountBob = service.createAccount(new Amount(BigDecimal.valueOf(initSum)));
+
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.transferMoney(accountAlice.getId(), accountBob.getId(), new Amount(BigDecimal.valueOf(-10)));
+    });
+
+    Assertions.assertThrows(WrongAmountException.class, () -> {
+      service.transferMoney(accountAlice.getId(), accountBob.getId(), new Amount(BigDecimal.ZERO));
+    });
+
+    assertEquals(service.getAccountBalance(accountAlice.getId()).getAmount(), BigDecimal.valueOf(initSum));
+    assertEquals(service.getAccountBalance(accountBob.getId()).getAmount(), BigDecimal.valueOf(initSum));
+  }
 }

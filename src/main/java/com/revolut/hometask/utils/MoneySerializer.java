@@ -11,6 +11,6 @@ import java.math.BigDecimal;
 public class MoneySerializer extends JsonSerializer<BigDecimal> {
   @Override
   public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-    gen.writeString(value.setScale(2, BigDecimal.ROUND_HALF_UP).toString());
+    gen.writeNumber(value.setScale(2, BigDecimal.ROUND_DOWN).toString());
   }
 }

@@ -4,11 +4,11 @@ import java.util.Objects;
 
 public class Account {
 
-  private Integer id;
+  private Long id;
 
   private Amount amount;
 
-  public Account(Integer id, Amount balance) {
+  public Account(Long id, Amount balance) {
     this.id = id;
     this.amount = balance;
   }
@@ -22,7 +22,7 @@ public class Account {
     this.amount = new Amount(that.amount);
   }
 
-  public Integer getId() {
+  public Long getId() {
     return id;
   }
 

@@ -1,6 +1,8 @@
 package com.revolut.hometask.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.revolut.hometask.utils.MoneyDeserializer;
 import com.revolut.hometask.utils.MoneySerializer;
 
 import java.math.BigDecimal;
@@ -9,6 +11,7 @@ import java.util.Objects;
 public class Amount {
 
   @JsonSerialize(using = MoneySerializer.class)
+  @JsonDeserialize(using = MoneyDeserializer.class)
   private BigDecimal amount;
 
   public Amount(BigDecimal amount) {
